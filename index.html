@@ -61,6 +61,7 @@
   .plan-head h2{margin:0; font-size:20px}
   .add-row{display:flex; gap:10px; margin-bottom:22px}
   .add-row input{flex:1}
+  .edit-input{flex:1}
   .section-label{font-size:12px; letter-spacing:.1em; text-transform:uppercase; color:var(--muted); margin:24px 0 10px}
   ol.line{list-style:none; margin:0; padding:0; counter-reset:n}
   ol.line li{counter-increment:n; display:flex; align-items:center; gap:10px; padding:12px 0; border-top:1px solid var(--line)}
@@ -87,6 +88,7 @@
   var KEY = "oneThingList.v1";
   var planning = false;     // in-memory only: always start on the task, never peeking the list
   var savedFlash = false;
+  var editId = null;        // id of the item currently being edited, in planning mode
 
   function today(){ return new Date().toISOString().slice(0,10); }
   function uid(){ return (Date.now().toString(36) + Math.random().toString(36).slice(2,7)); }
@@ -183,14 +185,24 @@
       line = '<ol class="line">';
       state.queue.forEach(function(it, i){
         var top = i===0 ? ' top' : '';
-        line += '<li class="'+top.trim()+'">'+
-          '<span class="num">'+(i+1)+'</span>'+
-          '<span class="item-text">'+ esc(it.text) +'</span>'+
-          (i>0 ? '<button class="mini" data-act="totop" data-id="'+it.id+'" title="Make this #1">⇧#1</button>' : '')+
-          (i>0 ? '<button class="mini" data-act="up" data-id="'+it.id+'" title="Up">↑</button>' : '')+
-          (i<state.queue.length-1 ? '<button class="mini" data-act="down" data-id="'+it.id+'" title="Down">↓</button>' : '')+
-          '<button class="mini x" data-act="del" data-id="'+it.id+'" title="Remove">✕</button>'+
-        '</li>';
+        if(editId === it.id){
+          line += '<li class="'+top.trim()+'">'+
+            '<span class="num">'+(i+1)+'</span>'+
+            '<input type="text" class="edit-input" id="editInput" value="'+ esc(it.text) +'">'+
+            '<button class="mini" data-act="saveedit" data-id="'+it.id+'" title="Save">✓</button>'+
+            '<button class="mini x" data-act="canceledit" data-id="'+it.id+'" title="Cancel">✕</button>'+
+          '</li>';
+        } else {
+          line += '<li class="'+top.trim()+'">'+
+            '<span class="num">'+(i+1)+'</span>'+
+            '<span class="item-text">'+ esc(it.text) +'</span>'+
+            '<button class="mini" data-act="edit" data-id="'+it.id+'" title="Edit">✎</button>'+
+            (i>0 ? '<button class="mini" data-act="totop" data-id="'+it.id+'" title="Make this #1">⇧#1</button>' : '')+
+            (i>0 ? '<button class="mini" data-act="up" data-id="'+it.id+'" title="Up">↑</button>' : '')+
+            (i<state.queue.length-1 ? '<button class="mini" data-act="down" data-id="'+it.id+'" title="Down">↓</button>' : '')+
+            '<button class="mini x" data-act="del" data-id="'+it.id+'" title="Remove">✕</button>'+
+          '</li>';
+        }
       });
       line += '</ol>';
     }
@@ -200,11 +212,20 @@
     else {
       inbox = '<ul class="inbox">';
       state.inbox.forEach(function(it){
-        inbox += '<li>'+
-          '<span class="item-text">'+ esc(it.text) +'</span>'+
-          '<button class="mini" data-act="promote" data-id="'+it.id+'" title="Add to the line">&rarr; line</button>'+
-          '<button class="mini x" data-act="trash" data-id="'+it.id+'" title="Discard">✕</button>'+
-        '</li>';
+        if(editId === it.id){
+          inbox += '<li>'+
+            '<input type="text" class="edit-input" id="editInput" value="'+ esc(it.text) +'">'+
+            '<button class="mini" data-act="saveedit" data-id="'+it.id+'" title="Save">✓</button>'+
+            '<button class="mini x" data-act="canceledit" data-id="'+it.id+'" title="Cancel">✕</button>'+
+          '</li>';
+        } else {
+          inbox += '<li>'+
+            '<span class="item-text">'+ esc(it.text) +'</span>'+
+            '<button class="mini" data-act="edit" data-id="'+it.id+'" title="Edit">✎</button>'+
+            '<button class="mini" data-act="promote" data-id="'+it.id+'" title="Add to the line">&rarr; line</button>'+
+            '<button class="mini x" data-act="trash" data-id="'+it.id+'" title="Discard">✕</button>'+
+          '</li>';
+        }
       });
       inbox += '</ul>';
     }
@@ -262,6 +283,16 @@
     Array.prototype.forEach.call(document.querySelectorAll("[data-act]"), function(b){
       b.onclick = function(){ handle(b.getAttribute("data-act"), b.getAttribute("data-id")); };
     });
+
+    var ei = document.getElementById("editInput");
+    if(ei){
+      ei.focus();
+      ei.setSelectionRange(ei.value.length, ei.value.length);
+      ei.onkeydown = function(e){
+        if(e.key==="Enter"){ handle("saveedit", editId); }
+        else if(e.key==="Escape"){ handle("canceledit", editId); }
+      };
+    }
   }
 
   function openPlan(){
@@ -272,6 +303,19 @@
 
   function handle(act, id){
     var i = idx(state.queue, id);
+    if(act==="edit"){ editId = id; render(); return; }
+    if(act==="canceledit"){ editId = null; render(); return; }
+    if(act==="saveedit"){
+      var el = document.getElementById("editInput");
+      var v = el ? (el.value||"").trim() : "";
+      if(v){
+        var qi = idx(state.queue, id);
+        if(qi>-1){ state.queue[qi].text = v; }
+        else { var ii = idx(state.inbox, id); if(ii>-1){ state.inbox[ii].text = v; } }
+        save();
+      }
+      editId = null; render(); return;
+    }
     if(act==="up" && i>0){ var a=state.queue; var t=a[i]; a[i]=a[i-1]; a[i-1]=t; }
     else if(act==="down" && i>-1 && i<state.queue.length-1){ var b=state.queue; var u=b[i]; b[i]=b[i+1]; b[i+1]=u; }
     else if(act==="totop" && i>0){ var c=state.queue.splice(i,1)[0]; state.queue.unshift(c); }
