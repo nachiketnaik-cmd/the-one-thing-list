@@ -143,14 +143,12 @@
 
   function focusHTML(){
     var t = state.queue[0];
-    var canDefer = state.queue.length > 1;
     return ''+
       '<div class="card">'+
         '<p class="eyebrow">Your one thing</p>'+
         '<p class="the-one">'+ esc(t.text) +'</p>'+
         '<div class="actions">'+
           '<button class="btn-primary" id="done">Done</button>'+
-          (canDefer ? '<button class="btn-ghost" id="defer">Can’t right now &mdash; send to the back</button>' : '')+
         '</div>'+
       '</div>';
   }
@@ -252,9 +250,6 @@
     if(q("done")) q("done").onclick = function(){
       state.queue.shift(); state.done += 1; state.doneDate = today();
       state.mode = "rest"; save(); render();
-    };
-    if(q("defer")) q("defer").onclick = function(){
-      var t = state.queue.shift(); state.queue.push(t); save(); render();
     };
     if(q("next")) q("next").onclick = function(){ state.mode="focus"; save(); render(); };
     if(q("toPlan")) q("toPlan").onclick = openPlan;
