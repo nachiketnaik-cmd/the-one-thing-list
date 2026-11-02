@@ -72,6 +72,7 @@
   .mini{background:var(--soft); color:var(--ink); border-radius:8px; padding:6px 9px; font-size:14px; font-weight:600; line-height:1}
   .mini:hover{filter:brightness(.97)}
   .mini.x{color:var(--danger)}
+  .mini.on{background:var(--accent); color:var(--accent-ink)}
   .inbox li{display:flex; align-items:center; gap:10px; padding:11px 0; border-top:1px solid var(--line)}
   .inbox li:first-child{border-top:none}
   .empty{color:var(--muted); font-size:14px; padding:6px 0}
@@ -92,13 +93,13 @@
 
   function today(){ return new Date().toISOString().slice(0,10); }
   function uid(){ return (Date.now().toString(36) + Math.random().toString(36).slice(2,7)); }
-  function defaultState(){ return { queue:[], inbox:[], mode:"focus", done:0, doneDate:today() }; }
+  function defaultState(){ return { queue:[], inbox:[], recurring:[], mode:"focus", done:0, doneDate:today() }; }
 
   function load(){
     try{
       var s = JSON.parse(localStorage.getItem(KEY));
       if(!s || typeof s!=="object") return defaultState();
-      s.queue = s.queue||[]; s.inbox = s.inbox||[];
+      s.queue = s.queue||[]; s.inbox = s.inbox||[]; s.recurring = s.recurring||[];
       s.mode = s.mode||"focus"; s.done = s.done||0; s.doneDate = s.doneDate||today();
       return s;
     }catch(e){ return defaultState(); }
@@ -145,7 +146,7 @@
     var t = state.queue[0];
     return ''+
       '<div class="card">'+
-        '<p class="eyebrow">Your one thing</p>'+
+        '<p class="eyebrow">Your one thing'+(t.recur?' · ↻ recurring':'')+'</p>'+
         '<p class="the-one">'+ esc(t.text) +'</p>'+
         '<div class="actions">'+
           '<button class="btn-primary" id="done">Done</button>'+
@@ -193,8 +194,9 @@
         } else {
           line += '<li class="'+top.trim()+'">'+
             '<span class="num">'+(i+1)+'</span>'+
-            '<span class="item-text">'+ esc(it.text) +'</span>'+
+            '<span class="item-text">'+ (it.recur?'↻ ':'') + esc(it.text) +'</span>'+
             '<button class="mini" data-act="edit" data-id="'+it.id+'" title="Edit">✎</button>'+
+            '<button class="mini'+(it.recur?' on':'')+'" data-act="recur" data-id="'+it.id+'" title="'+(it.recur?'Recurring: survives Done (click to make one-off)':'Mark as recurring')+'">↻</button>'+
             (i>0 ? '<button class="mini" data-act="totop" data-id="'+it.id+'" title="Make this #1">⇧#1</button>' : '')+
             (i>0 ? '<button class="mini" data-act="up" data-id="'+it.id+'" title="Up">↑</button>' : '')+
             (i<state.queue.length-1 ? '<button class="mini" data-act="down" data-id="'+it.id+'" title="Down">↓</button>' : '')+
@@ -228,6 +230,30 @@
       inbox += '</ul>';
     }
 
+    var recur = '';
+    if(state.recurring.length === 0){
+      recur = '<p class="empty">Nothing here yet. Mark a task recurring with ↻ and it lands here after you complete it, instead of being deleted.</p>';
+    } else {
+      recur = '<ul class="inbox">';
+      state.recurring.forEach(function(it){
+        if(editId === it.id){
+          recur += '<li>'+
+            '<input type="text" class="edit-input" id="editInput" value="'+ esc(it.text) +'">'+
+            '<button class="mini" data-act="saveedit" data-id="'+it.id+'" title="Save">✓</button>'+
+            '<button class="mini x" data-act="canceledit" data-id="'+it.id+'" title="Cancel">✕</button>'+
+          '</li>';
+        } else {
+          recur += '<li>'+
+            '<span class="item-text">↻ '+ esc(it.text) +'</span>'+
+            '<button class="mini" data-act="recurback" data-id="'+it.id+'" title="Send back to the line">&rarr; line</button>'+
+            '<button class="mini" data-act="edit" data-id="'+it.id+'" title="Edit">✎</button>'+
+            '<button class="mini x" data-act="recurdel" data-id="'+it.id+'" title="Remove permanently">✕</button>'+
+          '</li>';
+        }
+      });
+      recur += '</ul>';
+    }
+
     return ''+
       '<div class="card">'+
         '<div class="plan-head"><h2>Planning</h2></div>'+
@@ -237,6 +263,8 @@
         '</div>'+
         '<p class="section-label">The line — top is your one thing</p>'+
         line +
+        '<p class="section-label">Recurring — completed, send back when you need them</p>'+
+        recur +
         '<p class="section-label">Inbox — thoughts to sort</p>'+
         inbox +
         '<div class="plan-foot actions"><button class="btn-soft" id="closePlan">Back to my one thing</button></div>'+
@@ -248,7 +276,9 @@
     var q = function(id){ return document.getElementById(id); };
 
     if(q("done")) q("done").onclick = function(){
-      state.queue.shift(); state.done += 1; state.doneDate = today();
+      var fin = state.queue.shift();
+      if(fin && fin.recur){ state.recurring.push(fin); }
+      state.done += 1; state.doneDate = today();
       state.mode = "rest"; save(); render();
     };
     if(q("next")) q("next").onclick = function(){ state.mode="focus"; save(); render(); };
@@ -306,7 +336,11 @@
       if(v){
         var qi = idx(state.queue, id);
         if(qi>-1){ state.queue[qi].text = v; }
-        else { var ii = idx(state.inbox, id); if(ii>-1){ state.inbox[ii].text = v; } }
+        else {
+          var ii = idx(state.inbox, id);
+          if(ii>-1){ state.inbox[ii].text = v; }
+          else { var re = idx(state.recurring, id); if(re>-1){ state.recurring[re].text = v; } }
+        }
         save();
       }
       editId = null; render(); return;
@@ -317,6 +351,9 @@
     else if(act==="del" && i>-1){ state.queue.splice(i,1); }
     else if(act==="promote"){ var j=idx(state.inbox,id); if(j>-1){ state.queue.push(state.inbox.splice(j,1)[0]); } }
     else if(act==="trash"){ var k=idx(state.inbox,id); if(k>-1){ state.inbox.splice(k,1); } }
+    else if(act==="recur"){ var ri=idx(state.queue,id); if(ri>-1){ state.queue[ri].recur = !state.queue[ri].recur; } }
+    else if(act==="recurback"){ var rb=idx(state.recurring,id); if(rb>-1){ state.queue.push(state.recurring.splice(rb,1)[0]); } }
+    else if(act==="recurdel"){ var rd=idx(state.recurring,id); if(rd>-1){ state.recurring.splice(rd,1); } }
     save(); render();
   }
 
