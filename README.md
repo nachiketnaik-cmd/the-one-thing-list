@@ -21,8 +21,9 @@ The app has two modes: a day-to-day **focus** view and a **planning** view.
 - Under it there's a **"park a thought"** box. When a stray idea or reminder pops up mid-task, I jot it into this box and it drops into an **inbox**, out of sight. I don't have to open the list or break focus — the thought is safely out of my head and I keep working.
 - When I hit **Done**, I get a calm "You're done — tap when ready for the next one" screen. Doing nothing is a valid stop; or I tap **Next task** to pull the next one into focus.
 
-**Planning (a set time, e.g. each night).**
-- This is the only place the whole list is revealed, and it asks for a confirm first so I don't idly peek during the day.
+**Planning (can be opened any time).**
+- I open it from the focus screen with the **Planning mode** button. It can be opened whenever I want — nothing locks it to a particular time of day.
+- It's the only place the whole list is revealed. Before opening it shows a quick confirm ("this reveals your whole list") as a small speed bump, but that's the only friction; it doesn't stop me opening it mid-task. Using it as a set nightly ritual is a habit I keep, not something the app enforces.
 - Here I set up the line: add tasks, reorder them, promote one to #1, and triage the thoughts I parked in the inbox during the day — each inbox item either gets added to the line or discarded.
 
 Everything — chores, errands, hobbies — lives in the same single line. There are no dates or times; the order is purely what I decide. The discipline is in consciously choosing what earns the #1 spot.
