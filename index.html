@@ -79,7 +79,7 @@
   .inbox li:first-child{border-top:none}
   .empty{color:var(--muted); font-size:14px; padding:6px 0}
   .plan-foot{margin-top:28px}
-  .footer-link{text-align:center; margin-top:20px}
+  .footer-link{margin-top:20px; display:flex; gap:16px; justify-content:center; align-items:center}
 </style>
 </head>
 <body>
@@ -127,7 +127,8 @@
   }
 
   function planFooterLink(){
-    return '<div class="footer-link"><button class="btn-ghost" id="toPlan">Planning mode</button></div>';
+    return '<div class="footer-link"><button class="btn-ghost" id="toPlan">Planning mode</button>'+
+           '<a class="btn-ghost" href="prereq.html">Pre-Req map ↗</a></div>';
   }
 
   function render(){
