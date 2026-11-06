@@ -58,6 +58,8 @@
 
   /* Planning */
   .plan-head{display:flex; align-items:baseline; justify-content:space-between; margin-bottom:18px}
+  .prereq-link{color:var(--accent); text-decoration:none; font-size:13px; font-weight:600}
+  .prereq-link:hover{text-decoration:underline}
   .plan-head h2{margin:0; font-size:20px}
   .add-row{display:flex; gap:10px; margin-bottom:22px}
   .add-row input{flex:1}
@@ -256,7 +258,7 @@
 
     return ''+
       '<div class="card">'+
-        '<div class="plan-head"><h2>Planning</h2></div>'+
+        '<div class="plan-head"><h2>Planning</h2><a class="prereq-link" href="prereq.html">Pre-Req map ↗</a></div>'+
         '<div class="add-row">'+
           '<input type="text" id="newTask" placeholder="Add a task to the line…" autocomplete="off">'+
           '<button class="btn-primary" id="addTask">Add</button>'+

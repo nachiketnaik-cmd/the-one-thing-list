@@ -45,6 +45,15 @@ So recurring tasks cycle instead of disappearing. One-off tasks still get delete
 - **Make a task recurring:** the ↻ toggle in planning.
 - **Remove a task:** ✕ deletes it. (For recurring tasks, ✕ in the Recurring section removes it permanently.)
 
+## The Pre-Req Page
+
+A second page (`prereq.html`), linked from the **Planning** view, for mapping what a task depends on. It has two levels:
+
+- **Per-task diagram.** Click a task in the left list and it appears as the "final task" box at the bottom of the sandbox. Add prerequisite boxes above it (e.g. "Install Power BI", "Learn the basics") and draw downward arrows from each prereq into the task it feeds. One box can point into several; prereqs can have their own prereqs, so it builds up in layers.
+- **Task-to-task view.** Click the **"Your tasks"** header to see every task as a box and draw dependencies *between whole tasks* (task 2 depends on task 1). Those cross-task links then show up on the individual task's page as a gold "coming from…" box with an arrow from the top.
+
+Drag boxes to arrange them, click an arrow or a box's ✕ to delete it. Each task's diagram and the task-to-task links are saved in the browser (same local storage as the main app).
+
 ## My data
 
 - Everything is stored in the browser's local storage on the device I'm using (my laptop). It is **not** synced across devices, and clearing site data resets the list. That's a deliberate trade-off for keeping the app dead simple with no backend.

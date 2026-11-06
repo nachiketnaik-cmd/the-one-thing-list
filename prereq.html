@@ -1,0 +1,388 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>The Pre-Req Page</title>
+<style>
+  :root{
+    --bg:#f6f5f1; --card:#ffffff; --ink:#1f1d1a; --muted:#8a847b;
+    --line:#e7e3db; --accent:#3a7d5d; --accent-ink:#ffffff;
+    --soft:#f0eee8; --danger:#b4463c; --root:#b5852f;
+  }
+  @media (prefers-color-scheme: dark){
+    :root{
+      --bg:#17150f; --card:#201d16; --ink:#efece4; --muted:#948d80;
+      --line:#2e2a20; --accent:#5aa17c; --accent-ink:#0d1a13;
+      --soft:#272318; --danger:#d2766b; --root:#d8a94e;
+    }
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;height:100%}
+  body{
+    background:var(--bg); color:var(--ink);
+    font:16px/1.5 "Times New Roman", Times, Georgia, serif;
+    height:100vh; display:flex; flex-direction:column;
+  }
+  header{padding:14px 20px; border-bottom:1px solid var(--line); display:flex; align-items:center; gap:16px; flex:none}
+  header h1{font-size:15px; font-weight:700; letter-spacing:.1em; text-transform:uppercase; margin:0; color:var(--muted)}
+  header a{color:var(--accent); text-decoration:none; font-size:14px}
+  header a:hover{text-decoration:underline}
+  .wrap{flex:1; display:flex; min-height:0}
+
+  .tasks{width:33%; min-width:230px; max-width:360px; border-right:1px solid var(--line); padding:18px; overflow:auto}
+  .tasks .hdr{font-size:12px; letter-spacing:.1em; text-transform:uppercase; color:var(--muted); margin:0 0 4px; cursor:pointer; display:inline-flex; align-items:center; gap:7px; border-radius:8px; padding:4px 7px}
+  .tasks .hdr:hover{color:var(--accent); background:var(--soft)}
+  .tasks .hdr.act{color:var(--accent-ink); background:var(--accent)}
+  .tasks .hdr .mi{font-size:13px}
+  .note{font-size:12px; color:var(--muted); margin:4px 0 14px; font-style:italic}
+  .task{display:flex; align-items:center; gap:9px; background:var(--card); border:1px solid var(--line); border-radius:11px; padding:11px 13px; margin-bottom:9px; cursor:pointer}
+  .task:hover{border-color:var(--accent)}
+  .task.sel{border-color:var(--accent); box-shadow:0 0 0 2px color-mix(in srgb, var(--accent) 28%, transparent)}
+  .task .t{flex:1; word-break:break-word}
+  .task .dot{flex:none; width:9px; height:9px; border-radius:50%; background:var(--accent); opacity:0}
+  .task .dot.on{opacity:1}
+
+  input[type=text]{font:inherit; color:var(--ink); background:var(--bg); border:1px solid var(--line); border-radius:10px; padding:9px 11px}
+  input[disabled]{opacity:.5}
+  button{font:inherit; cursor:pointer; border:none; border-radius:10px; padding:9px 13px; font-weight:700}
+  button[disabled]{opacity:.5; cursor:default}
+  .btn-soft{background:var(--soft); color:var(--ink)}
+
+  .sandbox{flex:1; display:flex; flex-direction:column; min-width:0}
+  .toolbar{padding:12px 16px; border-bottom:1px solid var(--line); display:flex; align-items:center; gap:10px; flex-wrap:wrap; flex:none}
+  .toolbar .title{font-weight:700; margin-right:4px}
+  .toolbar .hint{font-size:13px; color:var(--muted); flex:1; min-width:160px}
+  .newbox{display:flex; gap:8px; align-items:center}
+  .newbox input{width:210px}
+  .banner{background:var(--accent); color:var(--accent-ink); padding:8px 16px; font-size:14px; flex:none; display:none}
+  .banner.on{display:block}
+  .canvas-scroll{flex:1; overflow:auto; position:relative}
+  .canvas{position:relative; width:2200px; height:1500px}
+  .placeholder{position:absolute; top:60px; left:50%; transform:translateX(-50%); color:var(--muted); font-style:italic; font-size:17px; text-align:center; max-width:420px}
+
+  svg.edges{position:absolute; inset:0; width:100%; height:100%; pointer-events:none}
+  svg.edges path.hit{stroke:transparent; stroke-width:16; fill:none; pointer-events:stroke; cursor:pointer}
+  svg.edges path.vis{stroke:var(--accent); stroke-width:2.5; fill:none}
+  svg.edges g.edge:hover path.vis{stroke:var(--danger); stroke-width:3.5}
+  svg.edges path.up{stroke:var(--root)}
+  svg.edges g.edge.up:hover path.vis{stroke:var(--root); stroke-width:2.5}
+  .elabel{fill:var(--muted); font-size:12px; font-family:"Times New Roman",Times,serif; paint-order:stroke; stroke:var(--bg); stroke-width:4px; pointer-events:none}
+
+  .node{position:absolute; width:168px; background:var(--card); border:1.5px solid var(--line); border-radius:12px; padding:10px 12px 8px; box-shadow:0 1px 3px rgba(0,0,0,.08); user-select:none}
+  .node.root{border-color:var(--root); box-shadow:0 1px 4px color-mix(in srgb, var(--root) 40%, transparent)}
+  .node.armed{border-color:var(--accent); box-shadow:0 0 0 3px color-mix(in srgb, var(--accent) 30%, transparent)}
+  .node.up{border-style:dashed; border-color:var(--root); background:var(--soft)}
+  .node .tag{font-size:10px; letter-spacing:.1em; text-transform:uppercase; color:var(--root); font-weight:700; margin-bottom:3px}
+  .node .head{display:flex; align-items:flex-start; gap:6px}
+  .node .text{flex:1; cursor:grab; word-break:break-word; font-size:15px}
+  .node.up .text{cursor:default}
+  .node .del{background:none; padding:0 2px; color:var(--muted); font-weight:700; line-height:1}
+  .node .del:hover{color:var(--danger)}
+  .node .link{margin-top:8px; width:100%; background:var(--soft); color:var(--ink); font-size:12px; font-weight:700; padding:6px}
+  .node .link:hover{background:var(--accent); color:var(--accent-ink)}
+</style>
+</head>
+<body>
+  <header>
+    <h1>The Pre-Req Page</h1>
+    <a href="index.html">&larr; back to The One Thing List</a>
+  </header>
+  <div class="wrap">
+    <aside class="tasks" id="tasks"></aside>
+    <section class="sandbox">
+      <div class="toolbar">
+        <span class="title" id="curTitle">No task selected</span>
+        <div class="newbox">
+          <input type="text" id="newBox" placeholder="Add a prerequisite box&hellip;" autocomplete="off" disabled>
+          <button class="btn-soft" id="addBox" disabled>Add box</button>
+        </div>
+        <span class="hint" id="hint"></span>
+        <button class="btn-soft" id="clear" disabled>Clear</button>
+      </div>
+      <div class="banner" id="banner"></div>
+      <div class="canvas-scroll">
+        <div class="canvas" id="canvas">
+          <svg class="edges" id="edges" viewBox="0 0 2200 1500" preserveAspectRatio="none">
+            <defs>
+              <marker id="arrow" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+                <path d="M0,1.6 L9,5 L0,8.4 z" fill="var(--accent)"></path>
+              </marker>
+              <marker id="arrowgold" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+                <path d="M0,1.6 L9,5 L0,8.4 z" fill="var(--root)"></path>
+              </marker>
+            </defs>
+          </svg>
+          <div class="placeholder" id="placeholder">Pick a task on the left to map its prerequisites, or click <b>&ldquo;Your tasks&rdquo;</b> to connect tasks to each other.</div>
+        </div>
+      </div>
+    </section>
+  </div>
+
+<script>
+(function(){
+  "use strict";
+  var TASK_KEY="oneThingList.v1";
+  var KEY="oneThingList.prereq.v2";
+  var META="\uffff__META__";
+  var SAMPLE=["Make Power BI project","Learn Power BI basics","Watch Power BI YouTube tutorial","Install Power BI","Finish quarterly report"];
+
+  function uid(){ return Date.now().toString(36)+Math.random().toString(36).slice(2,7); }
+  function esc(s){ return String(s).replace(/[&<>"']/g,function(c){ return {"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[c]; }); }
+
+  function loadTasks(){
+    try{ var s=JSON.parse(localStorage.getItem(TASK_KEY)); if(s&&s.queue&&s.queue.length){ return {tasks:s.queue.map(function(t){return t.text;}),sample:false}; } }catch(e){}
+    return {tasks:SAMPLE.slice(),sample:true};
+  }
+
+  var store=loadStore();
+  function loadStore(){
+    var base={selected:null,graphs:{},meta:{edges:[],pos:{}}};
+    try{ var g=JSON.parse(localStorage.getItem(KEY)); if(g&&g.graphs){ base.selected=g.selected||null; base.graphs=g.graphs; base.meta=g.meta&&g.meta.edges?g.meta:{edges:[],pos:{}}; } }catch(e){}
+    base.meta.pos=base.meta.pos||{}; base.meta.edges=base.meta.edges||[];
+    return base;
+  }
+  function save(){ try{ localStorage.setItem(KEY,JSON.stringify(store)); }catch(e){} }
+
+  var canvas=document.getElementById("canvas");
+  var svg=document.getElementById("edges");
+  var banner=document.getElementById("banner");
+  var placeholder=document.getElementById("placeholder");
+  var newBox=document.getElementById("newBox");
+  var addBoxBtn=document.getElementById("addBox");
+  var clearBtn=document.getElementById("clear");
+  var curTitle=document.getElementById("curTitle");
+  var hintEl=document.getElementById("hint");
+  var linkingFrom=null, addCount=0;
+
+  function mode(){ if(store.selected===META) return "meta"; if(store.selected) return "task"; return "none"; }
+  function curGraph(){ return (mode()==="task") ? store.graphs[store.selected] : null; }
+
+  function rootPos(){
+    var sc=canvas.parentNode; var w=sc.clientWidth||900, h=sc.clientHeight||700;
+    return { x:Math.max(40,Math.round(w/2-84)), y:Math.max(140,h-160) };
+  }
+  function ensureGraph(text){
+    if(!store.graphs[text]) store.graphs[text]={nodes:[],edges:[]};
+    var g=store.graphs[text];
+    var root=g.nodes.filter(function(n){return n.root;})[0];
+    if(!root){ var p=rootPos(); g.nodes.push({id:uid(),text:text,x:p.x,y:p.y,root:true}); }
+    else if(root.x===900&&root.y===680){ var q=rootPos(); root.x=q.x; root.y=q.y; } // migrate old centre default to bottom
+    return g;
+  }
+  function ensureMetaPos(tasks){
+    var i=0;
+    tasks.forEach(function(t){ if(!store.meta.pos[t]) store.meta.pos[t]={x:100+(i%3)*250,y:70+Math.floor(i/3)*160}; i++; });
+  }
+
+  // ---- left panel ----
+  function renderTasks(){
+    var info=loadTasks();
+    var el=document.getElementById("tasks");
+    var h='<div class="hdr'+(store.selected===META?' act':'')+'" id="metaBtn">Your tasks <span class="mi">&#9636; connect</span></div>';
+    h+= info.sample ? '<p class="note">Sample tasks (preview). Live site uses your One Thing List.</p>'
+                    : '<p class="note">Click a task to map it, or &ldquo;Your tasks&rdquo; to link tasks together.</p>';
+    info.tasks.forEach(function(t){
+      var g=store.graphs[t]; var has=g&&g.nodes&&g.nodes.length>1;
+      var sel=store.selected===t?" sel":"";
+      h+='<div class="task'+sel+'" data-text="'+esc(t)+'"><span class="dot'+(has?' on':'')+'"></span><span class="t">'+esc(t)+'</span></div>';
+    });
+    el.innerHTML=h;
+    document.getElementById("metaBtn").onclick=selectMeta;
+    Array.prototype.forEach.call(el.querySelectorAll(".task"), function(d){ d.onclick=function(){ selectTask(d.getAttribute("data-text")); }; });
+  }
+
+  function selectTask(text){ store.selected=text; linkingFrom=null; ensureGraph(text); save(); refresh(); }
+  function selectMeta(){ store.selected=META; linkingFrom=null; ensureMetaPos(loadTasks().tasks); save(); refresh(); }
+  function refresh(){ renderTasks(); setToolbar(); setBanner(); renderNodes(); drawEdges(); }
+
+  function setToolbar(){
+    var m=mode();
+    var isTask=(m==="task");
+    newBox.disabled=!isTask; addBoxBtn.disabled=!isTask; clearBtn.disabled=(m==="none");
+    placeholder.style.display=(m==="none")?"block":"none";
+    if(m==="meta"){ curTitle.textContent="All tasks \u2014 dependencies"; hintEl.innerHTML="Click a task's <b>&#10551; feeds into&hellip;</b> then click the task that depends on it (stays on for multiple &middot; Esc to stop) &middot; click an arrow to delete."; }
+    else if(m==="task"){ curTitle.textContent=store.selected; hintEl.innerHTML="Add prereq boxes, then <b>&#10551; arrow into&hellip;</b> &rarr; click each box it feeds &middot; gold dashed boxes come from the <b>Your tasks</b> view."; }
+    else { curTitle.textContent="No task selected"; hintEl.innerHTML=""; }
+  }
+
+  // ---- display model ----
+  function upstreamSources(){
+    if(mode()!=="task") return [];
+    var seen={}, out=[];
+    store.meta.edges.forEach(function(e){ if(e.to===store.selected && !seen[e.from]){ seen[e.from]=1; out.push(e.from); } });
+    return out;
+  }
+  function displayNodes(){
+    var m=mode();
+    if(m==="meta"){ return loadTasks().tasks.map(function(t){ var p=store.meta.pos[t]||{x:80,y:80}; return {id:t,text:t,x:p.x,y:p.y,meta:true}; }); }
+    if(m==="task"){
+      var g=curGraph(); var list=g.nodes.slice();
+      upstreamSources().forEach(function(src,k){ list.push({id:"up::"+src,text:src,x:120+k*210,y:40,up:true}); });
+      return list;
+    }
+    return [];
+  }
+  function displayEdges(){
+    var m=mode();
+    if(m==="meta"){ return store.meta.edges.map(function(e){ return {id:e.id,from:e.from,to:e.to}; }); }
+    if(m==="task"){
+      var g=curGraph(); var es=g.edges.slice();
+      var root=g.nodes.filter(function(n){return n.root;})[0];
+      if(root) upstreamSources().forEach(function(src){ es.push({id:"upe::"+src,from:"up::"+src,to:root.id,up:true}); });
+      return es;
+    }
+    return [];
+  }
+
+  // ---- render nodes ----
+  function taskNode(id){ var g=curGraph(); if(!g) return null; for(var i=0;i<g.nodes.length;i++){ if(g.nodes[i].id===id) return g.nodes[i]; } return null; }
+
+  function addNode(text){
+    var g=curGraph(); if(!g) return;
+    addCount++;
+    var sc=canvas.parentNode;
+    g.nodes.push({id:uid(),text:text,x:120+(addCount%6)*34+sc.scrollLeft,y:80+(addCount%5)*30+sc.scrollTop});
+    save(); refresh();
+  }
+
+  function renderNodes(){
+    Array.prototype.forEach.call(canvas.querySelectorAll(".node"), function(n){ n.remove(); });
+    displayNodes().forEach(function(n){
+      var d=document.createElement("div");
+      d.className="node"+(n.root?" root":"")+(n.up?" up":"")+(linkingFrom===n.id?" armed":"");
+      d.setAttribute("data-id",n.id);
+      d.style.left=n.x+"px"; d.style.top=n.y+"px";
+      var canLink=!n.up && !n.root;              // prereq boxes and meta task boxes can start arrows; final box & reflections cannot
+      var canDelete=(mode()==="task") && !n.root && !n.up;
+      d.innerHTML=
+        (n.root?'<div class="tag">\u2605 final task</div>':'')+
+        (n.up?'<div class="tag">coming from</div>':'')+
+        '<div class="head"><span class="text">'+esc(n.text)+'</span>'+
+        (canDelete?'<button class="del" title="Delete box">\u2715</button>':'')+'</div>'+
+        (canLink?'<button class="link">\u2799 '+(mode()==="meta"?"feeds into":"arrow into")+'\u2026</button>':'');
+      canvas.appendChild(d);
+      var del=d.querySelector(".del"); if(del) del.onclick=function(ev){ ev.stopPropagation(); deleteNode(n.id); };
+      var lk=d.querySelector(".link"); if(lk) lk.onclick=function(ev){ ev.stopPropagation(); armLink(n.id); };
+      if(!n.up){
+        d.addEventListener("mousedown", function(ev){
+          if(ev.target.closest("button")) return;
+          if(linkingFrom && linkingFrom!==n.id){ completeLink(n.id); return; }
+          if(linkingFrom && linkingFrom===n.id){ return; }
+          startDrag(n, ev);
+        });
+      }
+    });
+  }
+
+  function deleteNode(id){
+    var g=curGraph(); if(!g) return;
+    g.nodes=g.nodes.filter(function(n){return n.id!==id;});
+    g.edges=g.edges.filter(function(e){return e.from!==id&&e.to!==id;});
+    if(linkingFrom===id){ linkingFrom=null; }
+    save(); refresh();
+  }
+
+  // ---- linking (stays armed) ----
+  function armLink(id){ linkingFrom=(linkingFrom===id)?null:id; setBanner(); renderNodes(); drawEdges(); }
+  function completeLink(toId){
+    var m=mode();
+    if(linkingFrom && linkingFrom!==toId){
+      if(m==="meta"){
+        if(!store.meta.edges.some(function(e){return e.from===linkingFrom&&e.to===toId;})){ store.meta.edges.push({id:uid(),from:linkingFrom,to:toId}); save(); }
+      } else if(m==="task"){
+        var g=curGraph();
+        var realFrom=g.nodes.some(function(n){return n.id===linkingFrom;});
+        var realTo=g.nodes.some(function(n){return n.id===toId;});
+        if(realFrom&&realTo && !g.edges.some(function(e){return e.from===linkingFrom&&e.to===toId;})){ g.edges.push({id:uid(),from:linkingFrom,to:toId}); save(); }
+      }
+    }
+    renderTasks(); renderNodes(); drawEdges(); setBanner(); // keep armed
+  }
+  function setBanner(){
+    if(linkingFrom){
+      var n=displayNodes().filter(function(x){return x.id===linkingFrom;})[0];
+      banner.className="banner on";
+      banner.innerHTML="Drawing arrows out of <b>"+esc(n?n.text:"")+"</b> &mdash; click each box it points into. Esc to stop.";
+    } else { banner.className="banner"; banner.innerHTML=""; }
+  }
+
+  // ---- drag ----
+  var drag=null;
+  function startDrag(n, ev){ drag={id:n.id,meta:!!n.meta,sx:ev.clientX,sy:ev.clientY,ox:n.x,oy:n.y,moved:false}; ev.preventDefault(); }
+  document.addEventListener("mousemove", function(ev){
+    if(!drag) return;
+    var dx=ev.clientX-drag.sx, dy=ev.clientY-drag.sy;
+    if(Math.abs(dx)+Math.abs(dy)>3) drag.moved=true;
+    var nx=Math.max(0,drag.ox+dx), ny=Math.max(0,drag.oy+dy);
+    if(drag.meta){ store.meta.pos[drag.id]={x:nx,y:ny}; }
+    else { var n=taskNode(drag.id); if(n){ n.x=nx; n.y=ny; } }
+    var el=canvas.querySelector('.node[data-id="'+cssq(drag.id)+'"]');
+    if(el){ el.style.left=nx+"px"; el.style.top=ny+"px"; }
+    drawEdges();
+  });
+  document.addEventListener("mouseup", function(){ if(drag){ if(drag.moved) save(); drag=null; } });
+  document.addEventListener("keydown", function(e){ if(e.key==="Escape"&&linkingFrom){ linkingFrom=null; setBanner(); renderNodes(); drawEdges(); } });
+
+  function cssq(s){ return String(s).replace(/["\\]/g,"\\$&"); }
+
+  // ---- edges ----
+  function anchorOf(id){ var el=canvas.querySelector('.node[data-id="'+cssq(id)+'"]'); if(!el) return null; return {l:el.offsetLeft,t:el.offsetTop,w:el.offsetWidth,h:el.offsetHeight}; }
+  function edgeGeom(a,b){
+    var scx=a.l+a.w/2, scy=a.t+a.h/2, tcx=b.l+b.w/2, tcy=b.t+b.h/2;
+    var dx=tcx-scx, dy=tcy-scy, dist=Math.hypot(dx,dy)||1;
+    var k=Math.max(45,Math.min(170,dist*0.42));
+    var sx,sy,tx,ty,c1x,c1y,c2x,c2y;
+    if(Math.abs(dy)>=Math.abs(dx)){
+      if(dy>=0){ sx=scx; sy=a.t+a.h; tx=tcx; ty=b.t; c1x=sx; c1y=sy+k; c2x=tx; c2y=ty-k; }
+      else { sx=scx; sy=a.t; tx=tcx; ty=b.t+b.h; c1x=sx; c1y=sy-k; c2x=tx; c2y=ty+k; }
+    } else {
+      if(dx>=0){ sx=a.l+a.w; sy=scy; tx=b.l; ty=tcy; c1x=sx+k; c1y=sy; c2x=tx-k; c2y=ty; }
+      else { sx=a.l; sy=scy; tx=b.l+b.w; ty=tcy; c1x=sx-k; c1y=sy; c2x=tx+k; c2y=ty; }
+    }
+    return { d:"M"+sx+","+sy+" C"+c1x+","+c1y+" "+c2x+","+c2y+" "+tx+","+ty, mx:(sx+tx)/2, my:(sy+ty)/2 };
+  }
+  function drawEdges(){
+    Array.prototype.forEach.call(svg.querySelectorAll("g.edge"), function(g){ g.remove(); });
+    displayEdges().forEach(function(e){
+      var a=anchorOf(e.from), b=anchorOf(e.to); if(!a||!b) return;
+      var P=edgeGeom(a,b); var dpath=P.d;
+      var g=document.createElementNS("http://www.w3.org/2000/svg","g");
+      g.setAttribute("class","edge"+(e.up?" up":""));
+      var hit=document.createElementNS("http://www.w3.org/2000/svg","path"); hit.setAttribute("class","hit"); hit.setAttribute("d",dpath);
+      var vis=document.createElementNS("http://www.w3.org/2000/svg","path"); vis.setAttribute("class","vis"+(e.up?" up":"")); vis.setAttribute("d",dpath); vis.setAttribute("marker-end",e.up?"url(#arrowgold)":"url(#arrow)");
+      g.appendChild(hit); g.appendChild(vis);
+      if(e.label){
+        var tx2=document.createElementNS("http://www.w3.org/2000/svg","text");
+        tx2.setAttribute("class","elabel"); tx2.setAttribute("x",P.mx); tx2.setAttribute("y",P.my); tx2.setAttribute("text-anchor","middle");
+        tx2.textContent=e.label; g.appendChild(tx2);
+      }
+      if(!e.up){ g.addEventListener("click", function(){ removeEdge(e.id); }); }
+      svg.appendChild(g);
+    });
+  }
+  function removeEdge(id){
+    if(mode()==="meta"){ store.meta.edges=store.meta.edges.filter(function(x){return x.id!==id;}); }
+    else { var g=curGraph(); if(g) g.edges=g.edges.filter(function(x){return x.id!==id;}); }
+    save(); refresh();
+  }
+
+  // ---- toolbar ----
+  addBoxBtn.onclick=function(){ if(newBox.value.trim()){ addNode(newBox.value.trim()); newBox.value=""; newBox.focus(); } };
+  newBox.onkeydown=function(e){ if(e.key==="Enter"&&newBox.value.trim()){ addNode(newBox.value.trim()); newBox.value=""; } };
+  clearBtn.onclick=function(){
+    var m=mode();
+    if(m==="meta"){ if(store.meta.edges.length && !window.confirm("Clear all task-to-task dependencies?")) return; store.meta.edges=[]; }
+    else if(m==="task"){ var g=curGraph(); if(!g) return; if((g.nodes.length>1||g.edges.length) && !window.confirm("Clear prerequisites for this task? (the final task box stays)")) return; g.nodes=g.nodes.filter(function(n){return n.root;}); g.edges=[]; }
+    linkingFrom=null; save(); refresh();
+  };
+
+  // init
+  renderTasks(); setToolbar(); setBanner();
+  if(store.selected===META) ensureMetaPos(loadTasks().tasks);
+  else if(store.selected) ensureGraph(store.selected);
+  renderNodes(); drawEdges();
+})();
+</script>
+</body>
+</html>
