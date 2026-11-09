@@ -33,6 +33,9 @@
   /* Focus / rest */
   .eyebrow{font-size:12px; letter-spacing:.14em; text-transform:uppercase; color:var(--muted); margin:0 0 14px}
   .the-one{font-size:29px; line-height:1.25; font-weight:600; margin:0; word-break:break-word}
+  .prereqs{margin:0 0 16px}
+  .pr-label{font-size:10px; letter-spacing:.12em; text-transform:uppercase; color:var(--muted); margin:0 0 4px}
+  .pr-item{font-size:12px; font-weight:700; line-height:1.55}
   .rest-head{font-size:26px; font-weight:600; margin:0 0 6px}
   .rest-sub{color:var(--muted); margin:0}
   .actions{display:flex; gap:10px; flex-wrap:wrap; margin-top:26px}
@@ -145,10 +148,40 @@
     savedFlash = false;
   }
 
+  function prereqsFor(taskText){
+    var out=[];
+    try{
+      var g=JSON.parse(localStorage.getItem("oneThingList.prereq.v2"));
+      if(!g) return out;
+      if(g.meta && g.meta.edges){
+        g.meta.edges.forEach(function(e){ if(e.to===taskText && out.indexOf(e.from)<0) out.push(e.from); });
+      }
+      var gr = g.graphs && g.graphs[taskText];
+      if(gr && gr.nodes){
+        var root = gr.nodes.filter(function(n){return n.root;})[0];
+        if(root){
+          var reach={}, frontier=[root.id];
+          while(frontier.length){
+            var cur=frontier.pop();
+            gr.edges.forEach(function(e){ if(e.to===cur && !reach[e.from]){ reach[e.from]=1; frontier.push(e.from); } });
+          }
+          gr.nodes.forEach(function(n){ if(!n.root && reach[n.id] && out.indexOf(n.text)<0) out.push(n.text); });
+        }
+      }
+    }catch(e){}
+    return out;
+  }
+
   function focusHTML(){
     var t = state.queue[0];
+    var pr = prereqsFor(t.text);
+    var prHTML = pr.length
+      ? '<div class="prereqs"><div class="pr-label">Prerequisites</div>'+
+        pr.map(function(x){ return '<div class="pr-item">• '+esc(x)+'</div>'; }).join('')+'</div>'
+      : '';
     return ''+
       '<div class="card">'+
+        prHTML+
         '<p class="eyebrow">Your one thing'+(t.recur?' · ↻ recurring':'')+'</p>'+
         '<p class="the-one">'+ esc(t.text) +'</p>'+
         '<div class="actions">'+

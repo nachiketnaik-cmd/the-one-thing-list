@@ -54,6 +54,8 @@ A second page (`prereq.html`), linked from the **Planning** view, for mapping wh
 
 Drag boxes to arrange them, click an arrow or a box's ✕ to delete it. Each task's diagram and the task-to-task links are saved in the browser (same local storage as the main app).
 
+On the **main focus screen**, the current task now lists its prerequisites in small bold text just above it — pulled from both levels (the prereq boxes that feed into it at any depth, and any upstream tasks linked in the "Your tasks" view) — so you see what should come first before you start.
+
 ## My data
 
 - Everything is stored in the browser's local storage on the device I'm using (my laptop). It is **not** synced across devices, and clearing site data resets the list. That's a deliberate trade-off for keeping the app dead simple with no backend.
