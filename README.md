@@ -56,6 +56,10 @@ Drag boxes to arrange them, click an arrow or a box's ✕ to delete it. Each tas
 
 On the **main focus screen**, the current task now lists its prerequisites in small bold text just above it — pulled from both levels (the prereq boxes that feed into it at any depth, and any upstream tasks linked in the "Your tasks" view) — so you see what should come first before you start.
 
+## Removed-tasks archive
+
+The app keeps the **last 50 tasks that left the line** — completed via Done, or deleted in planning — newest first, so you can look back at something you did but forgot. Recurring tasks are not included (they cycle via the Recurring area instead). In **Planning mode** there's a "Removed tasks" section listing them, with a **Download .md** button that writes them out to a `deleted-tasks.md` file on demand. (It's a static site with no server, so the file is generated when you click rather than updated silently in the background.)
+
 ## My data
 
 - Everything is stored in the browser's local storage on the device I'm using (my laptop). It is **not** synced across devices, and clearing site data resets the list. That's a deliberate trade-off for keeping the app dead simple with no backend.
